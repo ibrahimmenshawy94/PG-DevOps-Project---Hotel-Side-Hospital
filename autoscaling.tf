@@ -1,10 +1,12 @@
 resource "aws_launch_configuration" "hsh_lc" {
 
-  name_prefix   = "hsh-lc-"
+  name_prefix     = "hsh-lc-"
 
-  image_id      = "ami-0fc5d935ebf8bc3bc"
+  image_id        = "ami-0fc5d935ebf8bc3bc"
 
-  instance_type = "t2.micro"
+  instance_type   = "t2.micro"
+
+  security_groups = [aws_security_group.hsh_sg.id]
 
 
 
@@ -20,15 +22,15 @@ resource "aws_launch_configuration" "hsh_lc" {
 
 resource "aws_autoscaling_group" "hsh_asg" {
 
-  launch_configuration    = aws_launch_configuration.hsh_lc.id
+  launch_configuration = aws_launch_configuration.hsh_lc.id
 
-  vpc_zone_identifier     = [aws_subnet.hsh_public_subnet.id]
+  vpc_zone_identifier  = [aws_subnet.hsh_public_subnet.id]
 
-  max_size                = 3
+  max_size             = 3
 
-  min_size                = 1
+  min_size             = 1
 
-  desired_capacity        = 1
+  desired_capacity     = 1
 
 
 
@@ -44,58 +46,32 @@ resource "aws_autoscaling_group" "hsh_asg" {
 
 }
 
-resource "aws_autoscaling_policy" "hsh_as_policy" {
 
-  name                   = "hsh-cpu-scale"
 
-  scaling_adjustment     = 1
+resource "aws_autoscaling_policy" "hsh_target_tracking" {
 
-  adjustment_type        = "ChangeInCapacity"
-
-  cooldown               = 300
+  name                   = "hsh-cpu-target-tracking"
 
   autoscaling_group_name = aws_autoscaling_group.hsh_asg.name
 
+  policy_type            = "TargetTrackingScaling"
 
-
-  policy_type = "SimpleScaling"
-
-}
+  estimated_instance_warmup = 200
 
 
 
-resource "aws_cloudwatch_metric_alarm" "hsh_high_cpu" {
+  target_tracking_configuration {
 
-  alarm_name          = "hsh_high_cpu_alarm"
+    predefined_metric_specification {
 
-  comparison_operator = "GreaterThanThreshold"
+      predefined_metric_type = "ASGAverageCPUUtilization"
 
-  evaluation_periods  = 1
+    }
 
-  metric_name         = "CPUUtilization"
-
-  namespace           = "AWS/EC2"
-
-  period              = 60
-
-  statistic           = "Average"
-
-  threshold           = 30.0
-
-  alarm_description   = "This alarm monitors EC2 CPU utilization"
-
-  actions_enabled     = true
-
-  alarm_actions       = [aws_autoscaling_policy.hsh_as_policy.arn]
-
-  dimensions = {
-
-    AutoScalingGroupName = aws_autoscaling_group.hsh_asg.name
+    target_value = 30.0
 
   }
 
 }
-
-
 
 
