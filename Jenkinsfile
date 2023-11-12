@@ -1,5 +1,10 @@
 pipeline {
     agent any
+    tools {
+
+       terraform 'Terraform'
+
+    }
 
     environment {
         // Define the GitHub repository URL
