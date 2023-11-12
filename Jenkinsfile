@@ -1,42 +1,34 @@
 pipeline {
     agent any
     tools {
-
-       terraform 'Terraform'
-
+       terraform 'myterraform'
     }
-
-    environment {
-        // Define the GitHub repository URL
-        GITHUB_REPO = 'https://github.com/ibrahimmenshawy94/PG-DevOps-Project---Hotel-Side-Hospital.git'
-    }
-
+      
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    // Checkout the code from the GitHub repository
-                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: GITHUB_REPO]]])
-                }
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/ibrahimmenshawy94/PG-DevOps-Project---Hotel-Side-Hospital.git']]])
             }
         }
-
-        stage('Init') {
+        stage('Terraform init') {
             steps {
-                // Initializes Terraform
                 sh 'terraform init'
             }
         }
-
-        stage('Apply') {
+        stage('Terraform apply') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS']]) {
-                    // Applies Terraform configuration with AWS credentials
-                    sh 'terraform apply -auto-approve'
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding', 
+                    credentialsId: 'AWS'
+                ]]) {
+                    sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        export AWS_DEFAULT_REGION='us-east-1'
+                        terraform apply -auto-approve
+                    '''
                 }
             }
         }
     }
-}
-
-
+}           
